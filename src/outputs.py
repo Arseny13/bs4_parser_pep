@@ -1,20 +1,9 @@
 import csv
 import datetime as dt
-import logging
 
 from prettytable import PrettyTable
 
-from constants import BASE_DIR, DATETIME_FORMAT
-
-
-def control_output(results, cli_args):
-    output = cli_args.output
-    if output == 'pretty':
-        pretty_output(results)
-    elif output == 'file':
-        file_output(results, cli_args)
-    else:
-        default_output(results)
+from constants import BASE_DIR, DATETIME_FORMAT, PRETTY_MODE, FILE_MODE
 
 
 def default_output(results):
@@ -22,7 +11,7 @@ def default_output(results):
         print(*row)
 
 
-def pretty_output(results):
+def pretty_output(results, *args):
     table = PrettyTable()
     table.field_names = results[0]
     table.align = 'l'
@@ -32,7 +21,10 @@ def pretty_output(results):
 
 def file_output(results, cli_args):
     results_dir = BASE_DIR / 'results'
-    results_dir.mkdir(exist_ok=True)
+    try:
+        results_dir.mkdir(exist_ok=True)
+    except PermissionError:
+        raise PermissionError('Нет прав для создания папки.')
     parser_mode = cli_args.mode
     now = dt.datetime.now()
     now_formatted = now.strftime(DATETIME_FORMAT)
@@ -42,4 +34,18 @@ def file_output(results, cli_args):
         writer = csv.writer(f, dialect='unix')
         writer.writerows(results)
 
-    logging.info(f'Файл с результатами был сохранён: {file_path}')
+    return file_path
+
+
+MODE_TO_OUTPUT = {
+    PRETTY_MODE: pretty_output,
+    FILE_MODE: file_output,
+}
+
+
+def control_output(results, cli_args):
+    output = cli_args.output
+    if output in MODE_TO_OUTPUT:
+        MODE_TO_OUTPUT[output](results, cli_args)
+    else:
+        default_output(results)

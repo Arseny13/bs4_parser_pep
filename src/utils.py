@@ -8,6 +8,7 @@ def get_response(session, url):
     """Перехват ошибки RequestException."""
     try:
         response = session.get(url)
+        response.raise_for_status()
         response.encoding = 'utf-8'
         return response
     except RequestException:
