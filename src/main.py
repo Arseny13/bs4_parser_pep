@@ -44,10 +44,10 @@ def whats_new(session):
         version_a_tag = find_tag(section, 'a')
         href = version_a_tag['href']
         version_link = urljoin(whats_new_url, href)
-        response = get_response(session, version_link)
-        if response is None:
+        try:
+            soup = create_soup(session, version_link)
+        except ResponseNoneException:
             continue
-        soup = BeautifulSoup(response.text, features='lxml')
         h1 = find_tag(soup, 'h1')
         dl = find_tag(soup, 'dl')
         dl_text = dl.text.replace('\n', ' ')
@@ -154,7 +154,6 @@ def pep(session):
     expected_status = status_pep(article_tag)
     results = {}
     results['Статус'] = 'Количество'
-    results['Не совпадающие'] = 0
     for section in tqdm(section_by_pep):
         table_tag = section.find('table')
         if table_tag is None:
@@ -196,7 +195,7 @@ def pep(session):
                     count += 1
                     break
             if status_id not in expected_status[status_table]:
-                results['Не совпадающие'] += 1
+                results[status_id] = 1
                 error_msg = (
                     f'Несовпадающие статусы: {id_url}\n'
                     f'Статус в карточке: {status_id}\n'
